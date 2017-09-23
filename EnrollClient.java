@@ -33,22 +33,23 @@ import java.util.Arrays;
  * A class to keep track of the enrollment state for a given client.
  */
 public abstract class EnrollClient extends ClientMonitor {
-    private static final long MS_PER_SEC = 1000;
-    private static final int ENROLLMENT_TIMEOUT_MS = 60 * 1000; // 1 minute
+    private static final long MS_PER_SEC = 1000;//number of milli seconds for a second
+    private static final int ENROLLMENT_TIMEOUT_MS = 60 * 1000; // 1 minute. the time in which enrollment time will be expired
     private byte[] mCryptoToken;
 
     public EnrollClient(Context context, long halDeviceId, IBinder token,
             IFingerprintServiceReceiver receiver, int userId, int groupId, byte [] cryptoToken,
             boolean restricted, String owner) {
+        //calls the constructor in ClientMonitor and initializes the device id, user id, group id for set of fingerprints and sets the name of the owner of the device
         super(context, halDeviceId, token, receiver, userId, groupId, restricted, owner);
         mCryptoToken = Arrays.copyOf(cryptoToken, cryptoToken.length);
     }
 
     @Override
     public boolean onEnrollResult(int fingerId, int groupId, int remaining) {
-        if (groupId != getGroupId()) {
+        if (groupId != getGroupId()) { //checks if the given groupId is not same as the group id of the fingerprint set 
             Slog.w(TAG, "groupId != getGroupId(), groupId: " + groupId +
-                    " getGroupId():" + getGroupId());
+                    " getGroupId():" + getGroupId()); //if not the same, then it is logged in log file
         }
         if (remaining == 0) {
             FingerprintUtils.getInstance().addFingerprintForUser(getContext(), fingerId,

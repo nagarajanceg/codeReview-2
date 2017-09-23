@@ -31,8 +31,8 @@ import java.util.List;
  */
 public class FingerprintUtils {
 
-    private static final long[] FP_ERROR_VIBRATE_PATTERN = new long[] {0, 30, 100, 30};
-    private static final long[] FP_SUCCESS_VIBRATE_PATTERN = new long[] {0, 30};
+    private static final long[] FP_ERROR_VIBRATE_PATTERN = new long[] {0, 30, 100, 30};//will start the device to vibrate without any delay, vibrates for 30ms and sleeps for 100ms and again starts vibrating for 30ms
+    private static final long[] FP_SUCCESS_VIBRATE_PATTERN = new long[] {0, 30};//will cause the device to vibrate for 30ms without any delay
 
     private static final Object sInstanceLock = new Object();
     private static FingerprintUtils sInstance;
@@ -41,12 +41,12 @@ public class FingerprintUtils {
     private final SparseArray<FingerprintsUserState> mUsers = new SparseArray<>();
 
     public static FingerprintUtils getInstance() {
-        synchronized (sInstanceLock) {
-            if (sInstance == null) {
+        synchronized (sInstanceLock) {//this makes sure only one thread is executed at once
+            if (sInstance == null) {//this creates a new object instance
                 sInstance = new FingerprintUtils();
             }
         }
-        return sInstance;
+        return sInstance;// returns the reference to the object instance
     }
 
     private FingerprintUtils() {
