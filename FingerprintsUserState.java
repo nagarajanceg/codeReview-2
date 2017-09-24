@@ -160,19 +160,30 @@ class FingerprintsUserState {
             // Not the most efficient algorithm in the world, but there shouldn't be more than 10
             String name = mCtx.getString(com.android.internal.R.string.fingerprint_name_template,
                     guess);
+            // if the name is unique return
             if (isUnique(name)) {
                 return name;
             }
+            // else increment no of guess and iterate
             guess++;
         }
     }
 
+    /**
+     * method to check if the given name doesn't exist
+     * in the existing fingerprints
+     * @param name
+     * @return
+     */
     private boolean isUnique(String name) {
+        // for each fingerprint in mfingerprints
         for (Fingerprint fp : mFingerprints) {
+            // if the name matches then return false , coz the name is already taken
             if (fp.getName().equals(name)) {
                 return false;
             }
         }
+        // else it's unqiue
         return true;
     }
 
@@ -180,27 +191,46 @@ class FingerprintsUserState {
         return new File(Environment.getUserSystemDirectory(userId), FINGERPRINT_FILE);
     }
 
+    // creating mwriteStateRunnable , (Classes have to extend runnable in order to be thread and
+    // be used for multi threaded environment)
     private final Runnable mWriteStateRunnable = new Runnable() {
         @Override
+        // this method has to be over ridden
+        // the method the worker method is dowritestate
         public void run() {
             doWriteState();
         }
     };
 
+
     private void scheduleWriteStateLocked() {
+        //NOTE this is done Asynchronosly and not locked with the instance
         AsyncTask.execute(mWriteStateRunnable);
     }
 
+    /**
+     * Method to create a deep copy of the fingerprint list
+     * @param array
+     * @return list of fingerprint objects
+     */
     private ArrayList<Fingerprint> getCopy(ArrayList<Fingerprint> array) {
+        // create a new list of given array size
         ArrayList<Fingerprint> result = new ArrayList<Fingerprint>(array.size());
         for (int i = 0; i < array.size(); i++) {
+            // for each i get the finger print in the array
             Fingerprint fp = array.get(i);
+            // create a new finger print with the existing name , id , group id and decise id
+            // and add to the result
             result.add(new Fingerprint(fp.getName(), fp.getGroupId(), fp.getFingerId(),
                     fp.getDeviceId()));
         }
+        // return result
         return result;
     }
 
+    /**
+     * This is the multi threaded method that is run simultaneously by various threads.
+     */
     private void doWriteState() {
         AtomicFile destination = new AtomicFile(mFile);
 
