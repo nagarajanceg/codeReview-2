@@ -127,7 +127,7 @@ public abstract class EnrollClient extends ClientMonitor {
 
                 Slog.w(TAG, "startEnroll failed, result=" + result); //failure is entered in the log file
                 MetricsLogger.histogram(getContext(), "fingerprintd_enroll_start_error", result);//the histogram is sampled with the fingerprint data
-                onError(FingerprintManager.FINGERPRINT_ERROR_HW_UNAVAILABLE, 0 /* vendorCode */);
+                onError(FingerprintManager.FINGERPRINT_ERROR_HW_UNAVAILABLE, 0 /* vendorCode */); //exception is notified
                 return result;
 
             }
