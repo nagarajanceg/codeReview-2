@@ -62,28 +62,34 @@ public class FingerprintUtils {
         getStateForUser(ctx, userId).addFingerprint(fingerId, userId);
     }
 
+    //removes the fingerprint from the list
     public void removeFingerprintIdForUser(Context ctx, int fingerId, int userId) {
         getStateForUser(ctx, userId).removeFingerprint(fingerId);
     }
 
+    //renames the fingerprint by indexing the list using the fingerId and creating a new object by transfering the same details and a new name
     public void renameFingerprintForUser(Context ctx, int fingerId, int userId, CharSequence name) {
-        if (TextUtils.isEmpty(name)) {
+        if (TextUtils.isEmpty(name)) { //checks if the name is empty, if it is, then do not rename it
             // Don't do the rename if it's empty
             return;
         }
         getStateForUser(ctx, userId).renameFingerprint(fingerId, name);
     }
 
+    //function to give out a pattern of vibrations if there is an error in fingerPrint
     public static void vibrateFingerprintError(Context context) {
-        Vibrator vibrator = context.getSystemService(Vibrator.class);
+        Vibrator vibrator = context.getSystemService(Vibrator.class); //gets the instance of the class that operates the vibrator on the device
         if (vibrator != null) {
-            vibrator.vibrate(FP_ERROR_VIBRATE_PATTERN, -1);
+            //this makes the vibration without any delay for 30ms and sleeps for 100ms and again vibrate for 30ms. -1 indicates that the vibration is not repeated again
+            vibrator.vibrate(FP_ERROR_VIBRATE_PATTERN, -1);  
         }
     }
 
+    //function to give out a pattern of vibrations if fingerPrint process is successful 
     public static void vibrateFingerprintSuccess(Context context) {
-        Vibrator vibrator = context.getSystemService(Vibrator.class);
+        Vibrator vibrator = context.getSystemService(Vibrator.class);//gets the instance of the class that operates the vibrator on the device
         if (vibrator != null) {
+            //this makes the vibration without any delay for 30ms.-1 indicates that the vibration is not repeated again
             vibrator.vibrate(FP_SUCCESS_VIBRATE_PATTERN, -1);
         }
     }
