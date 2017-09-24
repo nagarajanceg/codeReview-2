@@ -37,8 +37,8 @@ public abstract class AuthenticationClient extends ClientMonitor {
     public abstract int handleFailedAttempt();
     public abstract void resetFailedAttempts();
 
-    public static final int LOCKOUT_NONE = 0; /**/
-    public static final int LOCKOUT_TIMED = 1;
+    public static final int LOCKOUT_NONE = 0; /*assign unchanged value*/
+    public static final int LOCKOUT_TIMED = 1; /*Unchanged timer value*/
     public static final int LOCKOUT_PERMANENT = 2;
     /*Constructor for Abstract class which will be helpful in invoking this abstract class in  
         the implementation
@@ -91,24 +91,35 @@ public abstract class AuthenticationClient extends ClientMonitor {
                         Slog.v(TAG, "onAuthenticated(owner=" + getOwnerString()
                                 + ", id=" + fingerId + ", gp=" + groupId + ")");
                     }
-                    Fingerprint fp = !getIsRestricted()
+                    //check for the restricted deviceid assigned in the constructor 
+                    // if it is not restricted create final Fingerprint object with groupId corresponding
+                    // finger print associated with this device id.
+                    Fingerprint fp = !getIsRestricted() 
                             ? new Fingerprint("" /* TODO */, groupId, fingerId, getHalDeviceId())
                             : null;
+                    //overrided method from fingerprintmanager
+                    //Called when a fingerprint is recognized                            
                     receiver.onAuthenticationSucceeded(getHalDeviceId(), fp, getTargetUserId());
                 }
             } catch (RemoteException e) {
+                //fired this catch at any exception happened in authentication process
+                //Log the failure event 
                 Slog.w(TAG, "Failed to notify Authenticated:", e);
                 result = true; // client failed
             }
         } else {
             result = true; // client not listening
         }
+        //check for non zero fingerprint value.
         if (!authenticated) {
+            //check receiver event listener available
             if (receiver != null) {
+                //call the vibrator system service to notify the error for not having finger print value
                 FingerprintUtils.vibrateFingerprintError(getContext());
             }
             // allow system-defined limit of number of attempts before giving up
             int lockoutMode =  handleFailedAttempt();
+
             if (lockoutMode != LOCKOUT_NONE) {
                 try {
                     Slog.w(TAG, "Forcing lockout (fp driver code should do this!), mode(" +
@@ -124,10 +135,13 @@ public abstract class AuthenticationClient extends ClientMonitor {
             }
             result |= lockoutMode != LOCKOUT_NONE; // in a lockout mode
         } else {
+            //check receiver event listener available
             if (receiver != null) {
+                // Notify the the fingerprint is matched and success to proceed
                 FingerprintUtils.vibrateFingerprintSuccess(getContext());
             }
             result |= true; // we have a valid fingerprint, done
+            // Failed attempts counted so far have to reset to zero after a single success
             resetFailedAttempts();
         }
         return result;
