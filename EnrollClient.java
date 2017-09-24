@@ -47,83 +47,139 @@ public abstract class EnrollClient extends ClientMonitor {
 
     @Override
     public boolean onEnrollResult(int fingerId, int groupId, int remaining) {
-        if (groupId != getGroupId()) { //checks if the given groupId is not same as the group id of the fingerprint set 
+
+        //checks if the given groupId is not same as the group id of the fingerprint set
+        if (groupId != getGroupId()) {  
+
+            //if not the same, then it is logged in log file
             Slog.w(TAG, "groupId != getGroupId(), groupId: " + groupId +
-                    " getGroupId():" + getGroupId()); //if not the same, then it is logged in log file
+                    " getGroupId():" + getGroupId()); 
+
         }
         if (remaining == 0) {
+
             //creates a new instance of FingerPrint and adds the details of user fingerprint by executing the runnables in the background
             FingerprintUtils.getInstance().addFingerprintForUser(getContext(), fingerId,
                     getTargetUserId());
         }
+
         return sendEnrollResult(fingerId, groupId, remaining); //returns true if enrollment is completed
     }
+
+
 
     /*
      * @return true if we're done.
      */
     private boolean sendEnrollResult(int fpId, int groupId, int remaining) {
-        IFingerprintServiceReceiver receiver = getReceiver(); //obtains the receiver for fingerprint service from the device
+
+        //obtains the receiver for fingerprint service from the device
+        IFingerprintServiceReceiver receiver = getReceiver(); 
+
         if (receiver == null)
             return true; // client not listening
 
-        FingerprintUtils.vibrateFingerprintSuccess(getContext()); //the device vibrates for 30ms if the enrollment is sucessful
-        MetricsLogger.action(getContext(), MetricsEvent.ACTION_FINGERPRINT_ENROLL); //the context of the fingerprint service and the enrollment status is logged
+        //the device vibrates for 30ms if the enrollment is sucessful
+        FingerprintUtils.vibrateFingerprintSuccess(getContext()); 
+
+        //the context of the fingerprint service and the enrollment status is logged
+        MetricsLogger.action(getContext(), MetricsEvent.ACTION_FINGERPRINT_ENROLL); 
+
         try {
-            receiver.onEnrollResult(getHalDeviceId(), fpId, groupId, remaining); //updates the group's authenticator id after the enrollment is done
+
+            //updates the group's authenticator id after the enrollment is done
+            receiver.onEnrollResult(getHalDeviceId(), fpId, groupId, remaining); 
             return remaining == 0; //sends the result of the enrollment
+
         } catch (RemoteException e) {
-            Slog.w(TAG, "Failed to notify EnrollResult:", e); //if their is a failure in notifying, it is logged in the log file
+
+            //if their is a failure in notifying, it is logged in the log file
+            Slog.w(TAG, "Failed to notify EnrollResult:", e); 
             return true;
+
         }
     }
 
+
+
     @Override
     public int start() {
-        IBiometricsFingerprint daemon = getFingerprintDaemon();
-        if (daemon == null) {
+
+        //gets the interface for fingerprint service
+        IBiometricsFingerprint daemon = getFingerprintDaemon(); 
+
+        //indicates that the finngerprint is not available
+        if (daemon == null) { 
+
             Slog.w(TAG, "enroll: no fingerprint HAL!");
-            return ERROR_ESRCH;
+            return ERROR_ESRCH; //returns an error specifying that no process with that specific daemon is found
+
         }
-        final int timeout = (int) (ENROLLMENT_TIMEOUT_MS / MS_PER_SEC);
+
+        final int timeout = (int) (ENROLLMENT_TIMEOUT_MS / MS_PER_SEC); //sets timeout time to 60ms
+
         try {
-            final int result = daemon.enroll(mCryptoToken, getGroupId(), timeout);
+
+            //daemon is enrolled by sending the key, id and timeout time
+            final int result = daemon.enroll(mCryptoToken, getGroupId(), timeout); 
+
             if (result != 0) {
-                Slog.w(TAG, "startEnroll failed, result=" + result);
-                MetricsLogger.histogram(getContext(), "fingerprintd_enroll_start_error", result);
+
+                Slog.w(TAG, "startEnroll failed, result=" + result); //failure is entered in the log file
+                MetricsLogger.histogram(getContext(), "fingerprintd_enroll_start_error", result);//the histogram is sampled with the fingerprint data
                 onError(FingerprintManager.FINGERPRINT_ERROR_HW_UNAVAILABLE, 0 /* vendorCode */);
                 return result;
+
             }
         } catch (RemoteException e) {
-            Slog.e(TAG, "startEnroll failed", e);
+            Slog.e(TAG, "startEnroll failed", e); //logged if there is an exception
         }
         return 0; // success
     }
 
+
+
     @Override
     public int stop(boolean initiatedByClient) {
-        if (mAlreadyCancelled) {
-            Slog.w(TAG, "stopEnroll: already cancelled!");
+
+        //executes if the enrollment is cancelled
+        if (mAlreadyCancelled) { 
+            Slog.w(TAG, "stopEnroll: already cancelled!"); //logged into log file
             return 0;
+
         }
-        IBiometricsFingerprint daemon = getFingerprintDaemon();
-        if (daemon == null) {
-            Slog.w(TAG, "stopEnrollment: no fingerprint HAL!");
-            return ERROR_ESRCH;
+
+        //gets the interface for fingerprint service
+        IBiometricsFingerprint daemon = getFingerprintDaemon(); 
+
+        //indicates that the finngerprint is not available
+        if (daemon == null) { 
+
+            Slog.w(TAG, "stopEnrollment: no fingerprint HAL!"); //logged into log file
+            return ERROR_ESRCH;//returns an error specifying that no process with that specific daemon is found
+
         }
         try {
-            final int result = daemon.cancel();
+
+            //the interface for fingerprint service is cancelled
+            final int result = daemon.cancel(); 
+
             if (result != 0) {
                 Slog.w(TAG, "startEnrollCancel failed, result = " + result);
                 return result;
+
             }
         } catch (RemoteException e) {
+
+            //failed enrollment stopping state is logged in file
             Slog.e(TAG, "stopEnrollment failed", e);
+            
         }
         if (initiatedByClient) {
+            //exception is notified
             onError(FingerprintManager.FINGERPRINT_ERROR_CANCELED, 0 /* vendorCode */);
         }
-        mAlreadyCancelled = true;
+        mAlreadyCancelled = true; 
         return 0;
     }
 
