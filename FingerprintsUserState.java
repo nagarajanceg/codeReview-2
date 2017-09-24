@@ -14,8 +14,6 @@
  * limitations under the License
  */
 
-// trying to change
-
 package com.android.server.fingerprint;
 
 import android.content.Context;
@@ -46,11 +44,18 @@ import java.util.List;
  */
 class FingerprintsUserState {
 
+
+
     private static final String TAG = "FingerprintState";
     private static final String FINGERPRINT_FILE = "settings_fingerprint.xml";
 
+    // all the tags below represent the XML tag used in the XML file which stores
+    // all the details related to the fingerprint state.
+
+    // fingerprints contain multiple fingerprint inside the tag.
     private static final String TAG_FINGERPRINTS = "fingerprints";
     private static final String TAG_FINGERPRINT = "fingerprint";
+    // these are the tags describing the fingerprint
     private static final String ATTR_NAME = "name";
     private static final String ATTR_GROUP_ID = "groupId";
     private static final String ATTR_FINGER_ID = "fingerId";
@@ -59,6 +64,8 @@ class FingerprintsUserState {
     private final File mFile;
 
     @GuardedBy("this")
+    // list that contains the fingerprint classes , the fingerprint form the mfile are stored inside
+    // this variable. Also , this list is accessed synchronously throughout the program by multiple threads
     private final ArrayList<Fingerprint> mFingerprints = new ArrayList<Fingerprint>();
     private final Context mCtx;
 
@@ -231,6 +238,27 @@ class FingerprintsUserState {
     /**
      * This is the multi threaded method that is run simultaneously by various threads.
      * To wrtie change to the mfile that is used for storing the fingerprint details in Xml Format
+     *
+     * Below is a sample XML file part , on how the finger print details are stored.
+     *
+     * <fingerprints>
+     *     <fingerprint>
+     *         <name>
+     *             the name
+     *         </name>
+     *         <fingerid>
+     *             the finger print id
+     *         </fingerid>
+     *         <groupid>
+     *             the group id
+     *         </groupid>
+     *         <deviseid>
+     *             the devise id
+     *         </deviseid>
+     *     </fingerprint>
+     * </fingerprints>
+     *
+     *
      */
     private void doWriteState() {
         // AtomicFile is a class that helps performing atomic operations on file
@@ -256,17 +284,25 @@ class FingerprintsUserState {
             serializer.setOutput(out, "utf-8");
             serializer.setFeature("http://xmlpull.org/v1/doc/features.html#indent-output", true);
             serializer.startDocument(null, true);
+            // each finger print is stored inside the <fingerprints> tag
             serializer.startTag(null, TAG_FINGERPRINTS);
 
             final int count = fingerprints.size();
+
             for (int i = 0; i < count; i++) {
                 // for each fingerprint print in xml format
                 Fingerprint fp = fingerprints.get(i);
+                // start tag <fingerprint>
                 serializer.startTag(null, TAG_FINGERPRINT);
+                // store the value for <fingerid>
                 serializer.attribute(null, ATTR_FINGER_ID, Integer.toString(fp.getFingerId()));
+                // store the value for <name>
                 serializer.attribute(null, ATTR_NAME, fp.getName().toString());
+                // store the value for <groupid>
                 serializer.attribute(null, ATTR_GROUP_ID, Integer.toString(fp.getGroupId()));
+                // store the value for <deviseid>
                 serializer.attribute(null, ATTR_DEVICE_ID, Long.toString(fp.getDeviceId()));
+                // end the xml tag </fingerprint>
                 serializer.endTag(null, TAG_FINGERPRINT);
             }
             // add end tag
@@ -309,6 +345,7 @@ class FingerprintsUserState {
             // now the XmlPullParser is used to extract data from the XmlFile
             XmlPullParser parser = Xml.newPullParser();
             parser.setInput(in, null);
+            // parse
             parseStateLocked(parser);
 
         } catch (XmlPullParserException | IOException e) {
@@ -321,40 +358,74 @@ class FingerprintsUserState {
         }
     }
 
+
+    /**
+     * Method used to parse the document to find the FINGERPRINTS tag
+     * which contains each fingerprint details under FINGERPRINT tag
+     * @param parser
+     * @throws IOException
+     * @throws XmlPullParserException
+     */
     private void parseStateLocked(XmlPullParser parser)
             throws IOException, XmlPullParserException {
+        // get the total depth of the xml tags.
         final int outerDepth = parser.getDepth();
         int type;
+        // loop until , the next tag is not end of ducment
+        // or it's not END_TAG and the current depth is NOT more than the outerdepth
         while ((type = parser.next()) != XmlPullParser.END_DOCUMENT
                 && (type != XmlPullParser.END_TAG || parser.getDepth() > outerDepth)) {
+            // if it's end tag or text just continue looping
             if (type == XmlPullParser.END_TAG || type == XmlPullParser.TEXT) {
                 continue;
             }
-
+            // else get the tag name
             String tagName = parser.getName();
+            // if the tag name is "fingerprints" then use the parser
+            // to tag the information contained inside this tag
             if (tagName.equals(TAG_FINGERPRINTS)) {
                 parseFingerprintsLocked(parser);
             }
         }
     }
 
+    /**
+     * Method to parse each of the fingerprint tag under the fingerprints tag.
+     * This parses the information and adds them to list after creating FingerPrint classes
+     * This is stored in the fingerprint list member variable of this class
+     * @param parser
+     * @throws IOException
+     * @throws XmlPullParserException
+     */
+
     private void parseFingerprintsLocked(XmlPullParser parser)
             throws IOException, XmlPullParserException {
 
+        // get total depth
         final int outerDepth = parser.getDepth();
         int type;
+
+        // loop until , the next tag is not end of ducment
+        // or it's not END_TAG and the current depth is NOT more than the outerdepth
         while ((type = parser.next()) != XmlPullParser.END_DOCUMENT
                 && (type != XmlPullParser.END_TAG || parser.getDepth() > outerDepth)) {
             if (type == XmlPullParser.END_TAG || type == XmlPullParser.TEXT) {
                 continue;
             }
 
+            // get parser name
             String tagName = parser.getName();
+            // if parser name is "fingerprint" then parse the attribute values
             if (tagName.equals(TAG_FINGERPRINT)) {
+                // get fingerprint name
                 String name = parser.getAttributeValue(null, ATTR_NAME);
+                // get fingerprint groupid
                 String groupId = parser.getAttributeValue(null, ATTR_GROUP_ID);
+                // get fingerprint fingerid
                 String fingerId = parser.getAttributeValue(null, ATTR_FINGER_ID);
+                // get fingerprint deviceid
                 String deviceId = parser.getAttributeValue(null, ATTR_DEVICE_ID);
+                // form fingerprint class and add it to the list
                 mFingerprints.add(new Fingerprint(name, Integer.parseInt(groupId),
                         Integer.parseInt(fingerId), Integer.parseInt(deviceId)));
             }
