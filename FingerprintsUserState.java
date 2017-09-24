@@ -230,20 +230,28 @@ class FingerprintsUserState {
 
     /**
      * This is the multi threaded method that is run simultaneously by various threads.
+     * To wrtie change to the mfile that is used for storing the fingerprint details in Xml Format
      */
     private void doWriteState() {
+        // AtomicFile is a class that helps performing atomic operations on file
+        // and it also creates a back up so that if an operation fails we can restore it.
         AtomicFile destination = new AtomicFile(mFile);
 
         ArrayList<Fingerprint> fingerprints;
 
         synchronized (this) {
+            // get copy of the fingerprint in our class instance
+            // note that it alwasy contains the upto date version and all changes are made to it
+            // so to persist we first need the latest version
             fingerprints = getCopy(mFingerprints);
         }
 
         FileOutputStream out = null;
         try {
+            // we start writing (start wrtie is an operation provided by AtomicFile)
             out = destination.startWrite();
 
+            // we create a new XmlSerializer and set the output format , features and start tag
             XmlSerializer serializer = Xml.newSerializer();
             serializer.setOutput(out, "utf-8");
             serializer.setFeature("http://xmlpull.org/v1/doc/features.html#indent-output", true);
@@ -252,6 +260,7 @@ class FingerprintsUserState {
 
             final int count = fingerprints.size();
             for (int i = 0; i < count; i++) {
+                // for each fingerprint print in xml format
                 Fingerprint fp = fingerprints.get(i);
                 serializer.startTag(null, TAG_FINGERPRINT);
                 serializer.attribute(null, ATTR_FINGER_ID, Integer.toString(fp.getFingerId()));
@@ -260,41 +269,54 @@ class FingerprintsUserState {
                 serializer.attribute(null, ATTR_DEVICE_ID, Long.toString(fp.getDeviceId()));
                 serializer.endTag(null, TAG_FINGERPRINT);
             }
-
+            // add end tag
             serializer.endTag(null, TAG_FINGERPRINTS);
+            // end document write
             serializer.endDocument();
+            // finish write command
             destination.finishWrite(out);
-
             // Any error while writing is fatal.
         } catch (Throwable t) {
             Slog.wtf(TAG, "Failed to write settings, restoring backup", t);
+            // fail wrtie will replace the file or any opetion with the backup file thus we don't lose data
             destination.failWrite(out);
             throw new IllegalStateException("Failed to write fingerprints", t);
         } finally {
+            // close finally
             IoUtils.closeQuietly(out);
         }
     }
 
+    /**
+     * Method used to read the mfile , which contains the fingerprint data
+     * It is one of the multi threaded worker method and access the file in proper fashion
+     */
     private void readStateSyncLocked() {
+
         FileInputStream in;
+        // check if the mfile exist
         if (!mFile.exists()) {
             return;
         }
         try {
+            // create a new input stream from the mfile
             in = new FileInputStream(mFile);
         } catch (FileNotFoundException fnfe) {
             Slog.i(TAG, "No fingerprint state");
             return;
         }
         try {
+            // now the XmlPullParser is used to extract data from the XmlFile
             XmlPullParser parser = Xml.newPullParser();
             parser.setInput(in, null);
             parseStateLocked(parser);
 
         } catch (XmlPullParserException | IOException e) {
+            // if any exception in parsing , IO Exception throw exception
             throw new IllegalStateException("Failed parsing settings file: "
                     + mFile , e);
         } finally {
+            // finally close the input stream
             IoUtils.closeQuietly(in);
         }
     }
