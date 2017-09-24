@@ -62,40 +62,75 @@ class FingerprintsUserState {
     private final ArrayList<Fingerprint> mFingerprints = new ArrayList<Fingerprint>();
     private final Context mCtx;
 
+    /**
+     * Constructor for the given class with Context and UserID
+     * @param ctx
+     * @param userId
+     */
     public FingerprintsUserState(Context ctx, int userId) {
+        // get the mfile for the given user ID
         mFile = getFileForUser(userId);
         mCtx = ctx;
+        // in a synchronized manner , with this instance being the lock ,
+        // read state
         synchronized (this) {
             readStateSyncLocked();
         }
     }
 
+    /**
+     * Method to add a new Finger Print
+     * @param fingerId
+     * @param groupId
+     */
     public void addFingerprint(int fingerId, int groupId) {
         synchronized (this) {
+            // add new finger print to our member variable mFingerprints (array list)
             mFingerprints.add(new Fingerprint(getUniqueName(), groupId, fingerId, 0));
+            // write the change / current state
             scheduleWriteStateLocked();
         }
     }
 
+    /**
+     * Remove the given finger print from our list
+     * @param fingerId
+     */
     public void removeFingerprint(int fingerId) {
+
         synchronized (this) {
+            // for i from 0 to size of mfingerprints
             for (int i = 0; i < mFingerprints.size(); i++) {
+                // if the fingerprint id matches
                 if (mFingerprints.get(i).getFingerId() == fingerId) {
+                    // then remove the finger print from our list
                     mFingerprints.remove(i);
+                    // persist the changes
                     scheduleWriteStateLocked();
+                    // once changed break away from the loop
                     break;
                 }
             }
         }
     }
 
+    /**
+     * Method to rename the given fingerprint to given name
+     * @param fingerId
+     * @param name
+     */
     public void renameFingerprint(int fingerId, CharSequence name) {
         synchronized (this) {
+            // for i from 0 to size of mfingerprint list
             for (int i = 0; i < mFingerprints.size(); i++) {
+                // if the mfingerprint matches
                 if (mFingerprints.get(i).getFingerId() == fingerId) {
+                    // get the fingerprint object at the given index
                     Fingerprint old = mFingerprints.get(i);
+                    // crete a new fingerprint object with old groupid , fingerid and device id at the given index
                     mFingerprints.set(i, new Fingerprint(name, old.getGroupId(), old.getFingerId(),
                             old.getDeviceId()));
+                    // persist the changes
                     scheduleWriteStateLocked();
                     break;
                 }
@@ -103,8 +138,14 @@ class FingerprintsUserState {
         }
     }
 
+    /**
+     * Get all fingerprints
+     * @return deep copy of mfingerprints list
+     */
     public List<Fingerprint> getFingerprints() {
+
         synchronized (this) {
+            // return a deep copy of the mfingerprint list
             return getCopy(mFingerprints);
         }
     }
