@@ -20,7 +20,7 @@ import android.hardware.biometrics.fingerprint.V2_1.IBiometricsFingerprint;
 import com.android.internal.logging.MetricsLogger;
 import com.android.internal.logging.nano.MetricsProto.MetricsEvent;
 
-import android.content.Context;
+import android.content.Context; //Application context include
 import android.hardware.fingerprint.Fingerprint;
 import android.hardware.fingerprint.FingerprintManager;
 import android.hardware.fingerprint.IFingerprintServiceReceiver;
@@ -37,31 +37,57 @@ public abstract class AuthenticationClient extends ClientMonitor {
     public abstract int handleFailedAttempt();
     public abstract void resetFailedAttempts();
 
-    public static final int LOCKOUT_NONE = 0;
+    public static final int LOCKOUT_NONE = 0; /**/
     public static final int LOCKOUT_TIMED = 1;
     public static final int LOCKOUT_PERMANENT = 2;
+    /*Constructor for Abstract class which will be helpful in invoking this abstract class in  
+        the implementation
+    */ 
+    /*
+       Context - Application context of Fingerprint Service
+       HalDeviceId - Hardware abstraction layer device Id of associated fingerprint hardware device
+       Token - Unique token for the client 
+       restricted - the client access permission stated by android.Manifest.permission.MANAGE_FINGERPRINT
+       targetUserId - target user id for authentication
+       owner - owner name of the client that owns this
+       receiver -  authentication recipient of related events
+       group id - fingerprint set grouped identification 
 
+    */
     public AuthenticationClient(Context context, long halDeviceId, IBinder token,
             IFingerprintServiceReceiver receiver, int targetUserId, int groupId, long opId,
             boolean restricted, String owner) {
+        /*
+            super call should be the first statement invokes ClientMonitor constructor and assign values
+            to the required variables. Because AuthenticationClient is abstract class , it's not possible 
+            to create object and calling the super is the way to initalize the instance.
+        */
         super(context, halDeviceId, token, receiver, targetUserId, groupId, restricted, owner);
         mOpId = opId;
     }
 
+    /*This method override the extended class method*/
     @Override
+    /*Return true irrespective of valid or invalid fingerID. This true means authentication process get completed 
+    and move to process next client event*/
     public boolean onAuthenticated(int fingerId, int groupId) {
-        boolean result = false;
-        boolean authenticated = fingerId != 0;
-
-        IFingerprintServiceReceiver receiver = getReceiver();
+        boolean result = false; // intial value of authentication method compeletion status 
+        boolean authenticated = fingerId != 0; // assign authenticated value only for non zero fingerId value
+        // Receiver event listener already binded to the instance in the constructor and assign to the fingerprint service Interface 
+        IFingerprintServiceReceiver receiver = getReceiver(); 
+        // check for the any available receiver
         if (receiver != null) {
             try {
+                // logging the authentication event 
                 MetricsLogger.action(getContext(), MetricsEvent.ACTION_FINGERPRINT_AUTH,
                         authenticated);
                 if (!authenticated) {
+                    //on Auth failure notify the device using HAL id
                     receiver.onAuthenticationFailed(getHalDeviceId());
                 } else {
+                    //check for debugger flags. if its enbaled 
                     if (DEBUG) {
+                        //display logs with device owner details include stacktrace
                         Slog.v(TAG, "onAuthenticated(owner=" + getOwnerString()
                                 + ", id=" + fingerId + ", gp=" + groupId + ")");
                     }
