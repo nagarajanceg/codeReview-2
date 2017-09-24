@@ -34,28 +34,30 @@ public class FingerprintUtils {
     private static final long[] FP_ERROR_VIBRATE_PATTERN = new long[] {0, 30, 100, 30};//will start the device to vibrate without any delay, vibrates for 30ms and sleeps for 100ms and again starts vibrating for 30ms
     private static final long[] FP_SUCCESS_VIBRATE_PATTERN = new long[] {0, 30};//will cause the device to vibrate for 30ms without any delay
 
-    private static final Object sInstanceLock = new Object();
-    private static FingerprintUtils sInstance;
+    private static final Object sInstanceLock = new Object(); //lock created for all classes so that only one thread can execute at a time
+    private static FingerprintUtils sInstance; //declaration of instance for FingerprintUtils class 
 
     @GuardedBy("this")
-    private final SparseArray<FingerprintsUserState> mUsers = new SparseArray<>();
+    private final SparseArray<FingerprintsUserState> mUsers = new SparseArray<>(); // A sparse array is created to map to different users
 
-    public static FingerprintUtils getInstance() {
+    public static FingerprintUtils getInstance() { //getInstance() ensures only one instance to be created
         synchronized (sInstanceLock) {//this makes sure only one thread is executed at once
             if (sInstance == null) {//this creates a new object instance
-                sInstance = new FingerprintUtils();
+                sInstance = new FingerprintUtils(); //instantiation of the class instance
             }
         }
         return sInstance;// returns the reference to the object instance
     }
 
-    private FingerprintUtils() {
+    private FingerprintUtils() { //Empty constructor
     }
 
-    public List<Fingerprint> getFingerprintsForUser(Context ctx, int userId) {
-        return getStateForUser(ctx, userId).getFingerprints();
+    //this function returns the obtained initial fingerprints of the user
+    public List<Fingerprint> getFingerprintsForUser(Context ctx, int userId) { 
+        return getStateForUser(ctx, userId).getFingerprints(); //returns a copy of the fingerprints which has name,userid, group id and device id
     }
 
+    //creates a new instance of FingerPrint class and adds the details of user fingerprint by executing the runnables in the background
     public void addFingerprintForUser(Context ctx, int fingerId, int userId) {
         getStateForUser(ctx, userId).addFingerprint(fingerId, userId);
     }
@@ -88,12 +90,12 @@ public class FingerprintUtils {
 
     private FingerprintsUserState getStateForUser(Context ctx, int userId) {
         synchronized (this) {
-            FingerprintsUserState state = mUsers.get(userId);
-            if (state == null) {
-                state = new FingerprintsUserState(ctx, userId);
-                mUsers.put(userId, state);
+            FingerprintsUserState state = mUsers.get(userId); //the object is mapped taking userId as the key
+            if (state == null) { 
+                state = new FingerprintsUserState(ctx, userId);//Instantiates the class by sending context of fingerprint service and stores userId in a file
+                mUsers.put(userId, state); maps the userId to the state created
             }
-            return state;
+            return state; //return the fingerprint state of a particular userId
         }
     }
 }
