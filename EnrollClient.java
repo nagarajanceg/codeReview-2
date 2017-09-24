@@ -42,7 +42,7 @@ public abstract class EnrollClient extends ClientMonitor {
             boolean restricted, String owner) {
         //calls the constructor in ClientMonitor and initializes the device id, user id, group id for set of fingerprints and sets the name of the owner of the device
         super(context, halDeviceId, token, receiver, userId, groupId, restricted, owner);
-        mCryptoToken = Arrays.copyOf(cryptoToken, cryptoToken.length);
+        mCryptoToken = Arrays.copyOf(cryptoToken, cryptoToken.length); //the fingerprint public key is added along with the copy of it with the new length
     }
 
     @Override
@@ -52,27 +52,28 @@ public abstract class EnrollClient extends ClientMonitor {
                     " getGroupId():" + getGroupId()); //if not the same, then it is logged in log file
         }
         if (remaining == 0) {
+            //creates a new instance of FingerPrint and adds the details of user fingerprint by executing the runnables in the background
             FingerprintUtils.getInstance().addFingerprintForUser(getContext(), fingerId,
                     getTargetUserId());
         }
-        return sendEnrollResult(fingerId, groupId, remaining);
+        return sendEnrollResult(fingerId, groupId, remaining); //returns true if enrollment is completed
     }
 
     /*
      * @return true if we're done.
      */
     private boolean sendEnrollResult(int fpId, int groupId, int remaining) {
-        IFingerprintServiceReceiver receiver = getReceiver();
+        IFingerprintServiceReceiver receiver = getReceiver(); //obtains the receiver for fingerprint service from the device
         if (receiver == null)
             return true; // client not listening
 
-        FingerprintUtils.vibrateFingerprintSuccess(getContext());
-        MetricsLogger.action(getContext(), MetricsEvent.ACTION_FINGERPRINT_ENROLL);
+        FingerprintUtils.vibrateFingerprintSuccess(getContext()); //the device vibrates for 30ms if the enrollment is sucessful
+        MetricsLogger.action(getContext(), MetricsEvent.ACTION_FINGERPRINT_ENROLL); //the context of the fingerprint service and the enrollment status is logged
         try {
-            receiver.onEnrollResult(getHalDeviceId(), fpId, groupId, remaining);
-            return remaining == 0;
+            receiver.onEnrollResult(getHalDeviceId(), fpId, groupId, remaining); //updates the group's authenticator id after the enrollment is done
+            return remaining == 0; //sends the result of the enrollment
         } catch (RemoteException e) {
-            Slog.w(TAG, "Failed to notify EnrollResult:", e);
+            Slog.w(TAG, "Failed to notify EnrollResult:", e); //if their is a failure in notifying, it is logged in the log file
             return true;
         }
     }
