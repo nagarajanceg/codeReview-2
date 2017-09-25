@@ -35,7 +35,7 @@ import java.util.Arrays;
 public abstract class EnrollClient extends ClientMonitor {
     private static final long MS_PER_SEC = 1000;//number of milli seconds for a second
     private static final int ENROLLMENT_TIMEOUT_MS = 60 * 1000; // 1 minute. the time in which enrollment time will be expired
-    private byte[] mCryptoToken;
+    private byte[] mCryptoToken; //the fingerprint public key 
 
     public EnrollClient(Context context, long halDeviceId, IBinder token,
             IFingerprintServiceReceiver receiver, int userId, int groupId, byte [] cryptoToken,

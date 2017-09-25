@@ -104,7 +104,7 @@ public abstract class AuthenticationClient extends ClientMonitor {
                     receiver.onAuthenticationSucceeded(getHalDeviceId(), fp, getTargetUserId());
                 }
             } catch (RemoteException e) {
-                //fired this catch at any exception happened in authentication process
+                // Catch all the communication related exception during finger print authentication process
                 //Log the failure event 
                 Slog.w(TAG, "Failed to notify Authenticated:", e);
                 result = true; // client failed
@@ -160,23 +160,32 @@ public abstract class AuthenticationClient extends ClientMonitor {
      */
     @Override
     public int start() {
+        //get fingerprint service provider
         IBiometricsFingerprint daemon = getFingerprintDaemon();
+        //notify error msg(fingerprint HAL is dead) if no service available
         if (daemon == null) {
             Slog.w(TAG, "start authentication: no fingerprint HAL!");
             return ERROR_ESRCH;
         }
         try {
+            //getGroupId() - Gets the group id specified when the fingerprint was enrolled
+            //authenticate with op id provided 
             final int result = daemon.authenticate(mOpId, getGroupId());
+            //Log error on the authenticate failure
             if (result != 0) {
                 Slog.w(TAG, "startAuthentication failed, result=" + result);
+                //Log the values in histogram basis and the increment the counter based on the no of errors
                 MetricsLogger.histogram(getContext(), "fingeprintd_auth_start_error", result);
+                // set the fingerprint manager as unavailable
                 onError(FingerprintManager.FINGERPRINT_ERROR_HW_UNAVAILABLE, 0 /* vendorCode */);
                 return result;
             }
+            //initiate the authenticating process and log along with owner details 
             if (DEBUG) Slog.w(TAG, "client " + getOwnerString() + " is authenticating...");
         } catch (RemoteException e) {
+            //Log the auth failure
             Slog.e(TAG, "startAuthentication failed", e);
-            return ERROR_ESRCH;
+            return ERROR_ESRCH; //Likely fingerprint HAL is dead.
         }
         return 0; // success
     }
@@ -187,13 +196,16 @@ public abstract class AuthenticationClient extends ClientMonitor {
             Slog.w(TAG, "stopAuthentication: already cancelled!");
             return 0;
         }
+        //fingerprint service provider
         IBiometricsFingerprint daemon = getFingerprintDaemon();
+        //No service available then stop the authentication process and notify the error
         if (daemon == null) {
             Slog.w(TAG, "stopAuthentication: no fingerprint HAL!");
             return ERROR_ESRCH;
         }
         try {
             final int result = daemon.cancel();
+            // check for any service cancellation, if it's cancelled stop the authentication and notify 
             if (result != 0) {
                 Slog.w(TAG, "stopAuthentication failed, result=" + result);
                 return result;
@@ -209,18 +221,21 @@ public abstract class AuthenticationClient extends ClientMonitor {
 
     @Override
     public boolean onEnrollResult(int fingerId, int groupId, int remaining) {
+        //check for debug enabled
         if (DEBUG) Slog.w(TAG, "onEnrollResult() called for authenticate!");
         return true; // Invalid for Authenticate
     }
 
     @Override
     public boolean onRemoved(int fingerId, int groupId, int remaining) {
+        //check for debug enabled
         if (DEBUG) Slog.w(TAG, "onRemoved() called for authenticate!");
         return true; // Invalid for Authenticate
     }
 
     @Override
     public boolean onEnumerationResult(int fingerId, int groupId, int remaining) {
+        //check for debug enabled
         if (DEBUG) Slog.w(TAG, "onEnumerationResult() called for authenticate!");
         return true; // Invalid for Authenticate
     }

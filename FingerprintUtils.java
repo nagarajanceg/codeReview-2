@@ -48,7 +48,8 @@ public class FingerprintUtils {
 
 
 
-    //getInstance() ensures only one instance to be created
+    //getInstance() ensures only one instance to be created/
+    //
     public static FingerprintUtils getInstance() { 
         synchronized (sInstanceLock) {//this makes sure only one thread is executed at once
             if (sInstance == null) {//this creates a new object instance
