@@ -36,12 +36,15 @@ public abstract class AuthenticationClient extends ClientMonitor {
     //Abstract method it can be implemented at the time invoking
     public abstract int handleFailedAttempt();
     public abstract void resetFailedAttempts();
-    /*Three states for a lock have been maintained LOCKOUT_NONE,LOCKOUT_TIMED,LOCKOUT_PERMANENT */
+    /*Three states for a lock have been maintained LOCKOUT_NONE, LOCKOUT_TIMED, LOCKOUT_PERMANENT */
     /*Assign unchanged value 0 to LOCKOUT_NONE indicates there is no failed attempt for fingerprint verification*/
+    
     public static final int LOCKOUT_NONE = 0; 
     /*Assign unchanged value 1 to LOCKOUT_TIMED indicates there has been few failed attempts caused time out for further attempts */
+    // Max timed out = 300000ms and max number of failure attempts to the lockout timed - 5 times
     public static final int LOCKOUT_TIMED = 1; /*Unchanged timer value*/
-    /*Assign unchanged value 2 to LOCKOUT_PERMANENT indicates the loca out untill the reset the failed attempts*/
+    /*Assign unchanged value 2 to LOCKOUT_PERMANENT indicates the lockout untill the reset the failed attempts*/
+    //Max no of attempts allowed for permanent lockout is 20
     public static final int LOCKOUT_PERMANENT = 2;
     /*Constructor for Abstract class which will be helpful in invoking this abstract class in  
         the implementation
@@ -54,6 +57,7 @@ public abstract class AuthenticationClient extends ClientMonitor {
        targetUserId - target user id for authentication
        owner - owner name of the client that owns this
        receiver -  authentication recipient of related events
+       opId - operation identification number
        group id - fingerprint set grouped identification 
     */
     public AuthenticationClient(Context context, long halDeviceId, IBinder token,
@@ -100,7 +104,8 @@ public abstract class AuthenticationClient extends ClientMonitor {
                             ? new Fingerprint("" /* TODO */, groupId, fingerId, getHalDeviceId())
                             : null;
                     //overrided method from fingerprintmanager
-                    //Called when a fingerprint is recognized                            
+                    /*Called when a fingerprint is recognized  and bind the target user id and device id to the
+                    finger print object*/                          
                     receiver.onAuthenticationSucceeded(getHalDeviceId(), fp, getTargetUserId());
                 }
             } catch (RemoteException e) {
@@ -171,7 +176,7 @@ public abstract class AuthenticationClient extends ClientMonitor {
             //getGroupId() - Gets the group id specified when the fingerprint was enrolled
             //authenticate with op id provided 
             final int result = daemon.authenticate(mOpId, getGroupId());
-            //Log error on the authenticate failure
+            // Log error on Invoked authentication function fails or finger print dies
             if (result != 0) {
                 Slog.w(TAG, "startAuthentication failed, result=" + result);
                 //Log the values in histogram basis and the increment the counter based on the no of errors
@@ -192,6 +197,8 @@ public abstract class AuthenticationClient extends ClientMonitor {
 
     @Override
     public int stop(boolean initiatedByClient) {
+        //boolean variable mAlreadyCancelled shows the user is already authenticated
+        // And then stopped further authentication
         if (mAlreadyCancelled) {
             Slog.w(TAG, "stopAuthentication: already cancelled!");
             return 0;
@@ -201,7 +208,7 @@ public abstract class AuthenticationClient extends ClientMonitor {
         //No service available then stop the authentication process and notify the error
         if (daemon == null) {
             Slog.w(TAG, "stopAuthentication: no fingerprint HAL!");
-            return ERROR_ESRCH;
+            return ERROR_ESRCH; //Likely fingerprint HAL is dead.
         }
         try {
             final int result = daemon.cancel();
@@ -213,26 +220,30 @@ public abstract class AuthenticationClient extends ClientMonitor {
             if (DEBUG) Slog.w(TAG, "client " + getOwnerString() + " is no longer authenticating");
         } catch (RemoteException e) {
             Slog.e(TAG, "stopAuthentication failed", e);
-            return ERROR_ESRCH;
+            return ERROR_ESRCH; //Likely fingerprint HAL is dead.
         }
-        mAlreadyCancelled = true;
+        mAlreadyCancelled = true; // Make it as true is helpful to avoid further authentication
         return 0; // success
     }
 
+    // remaining - number of remaining available valid attempts to authenticate fingerId before locking
+    // fingerId - fingerprint provided by the user
+    // groupId - fingerId belongs to the groupId
+    // Enroll Result Arbitration
     @Override
     public boolean onEnrollResult(int fingerId, int groupId, int remaining) {
         //check for debug enabled
         if (DEBUG) Slog.w(TAG, "onEnrollResult() called for authenticate!");
         return true; // Invalid for Authenticate
     }
-
+    //remove Arbitration
     @Override
     public boolean onRemoved(int fingerId, int groupId, int remaining) {
         //check for debug enabled
         if (DEBUG) Slog.w(TAG, "onRemoved() called for authenticate!");
         return true; // Invalid for Authenticate
     }
-
+    // enumerate result Arbitration
     @Override
     public boolean onEnumerationResult(int fingerId, int groupId, int remaining) {
         //check for debug enabled
