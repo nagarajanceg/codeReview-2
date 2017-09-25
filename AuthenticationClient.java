@@ -33,12 +33,15 @@ import android.util.Slog;
  */
 public abstract class AuthenticationClient extends ClientMonitor {
     private long mOpId;
-
+    //Abstract method it can be implemented at the time invoking
     public abstract int handleFailedAttempt();
     public abstract void resetFailedAttempts();
-
-    public static final int LOCKOUT_NONE = 0; /*assign unchanged value*/
+    /*Three states for a lock have been maintained LOCKOUT_NONE,LOCKOUT_TIMED,LOCKOUT_PERMANENT */
+    /*Assign unchanged value 0 to LOCKOUT_NONE indicates there is no failed attempt for fingerprint verification*/
+    public static final int LOCKOUT_NONE = 0; 
+    /*Assign unchanged value 1 to LOCKOUT_TIMED indicates there has been few failed attempts caused time out for further attempts */
     public static final int LOCKOUT_TIMED = 1; /*Unchanged timer value*/
+    /*Assign unchanged value 2 to LOCKOUT_PERMANENT indicates the loca out untill the reset the failed attempts*/
     public static final int LOCKOUT_PERMANENT = 2;
     /*Constructor for Abstract class which will be helpful in invoking this abstract class in  
         the implementation
@@ -52,7 +55,6 @@ public abstract class AuthenticationClient extends ClientMonitor {
        owner - owner name of the client that owns this
        receiver -  authentication recipient of related events
        group id - fingerprint set grouped identification 
-
     */
     public AuthenticationClient(Context context, long halDeviceId, IBinder token,
             IFingerprintServiceReceiver receiver, int targetUserId, int groupId, long opId,
@@ -118,21 +120,27 @@ public abstract class AuthenticationClient extends ClientMonitor {
                 FingerprintUtils.vibrateFingerprintError(getContext());
             }
             // allow system-defined limit of number of attempts before giving up
+            // invoking class having generic functionality for the failedAttempt
             int lockoutMode =  handleFailedAttempt();
-
+            /*check for any other lockout state apart from Lockout_none*/
             if (lockoutMode != LOCKOUT_NONE) {
                 try {
                     Slog.w(TAG, "Forcing lockout (fp driver code should do this!), mode(" +
                             lockoutMode + ")");
                     stop(false);
+                    //check Lockout_timer and if it available set error code as lock timed out otherwise
+                    //set erroe code as permanent lock
                     int errorCode = lockoutMode == LOCKOUT_TIMED ?
                             FingerprintManager.FINGERPRINT_ERROR_LOCKOUT :
                             FingerprintManager.FINGERPRINT_ERROR_LOCKOUT_PERMANENT;
+                    //notify the error through receiver error callback        
                     receiver.onError(getHalDeviceId(), errorCode, 0 /* vendorCode */);
                 } catch (RemoteException e) {
+                    //record a log at the notification failure
                     Slog.w(TAG, "Failed to notify lockout:", e);
                 }
             }
+            //set the result value
             result |= lockoutMode != LOCKOUT_NONE; // in a lockout mode
         } else {
             //check receiver event listener available
