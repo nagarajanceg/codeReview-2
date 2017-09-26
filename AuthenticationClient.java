@@ -172,7 +172,7 @@ public abstract class AuthenticationClient extends ClientMonitor {
         //notify error msg(fingerprint HAL is dead) if no service available
         if (daemon == null) {
             Slog.w(TAG, "start authentication: no fingerprint HAL!");
-            return ERROR_ESRCH;
+            return ERROR_ESRCH; ////Likely fingerprint HAL is dead.
         }
         try {
             //getGroupId() - Gets the group id specified when the fingerprint was enrolled
@@ -197,6 +197,11 @@ public abstract class AuthenticationClient extends ClientMonitor {
         return 0; // success
     }
 
+    /*
+        override the generic stop method available in the parent class ClientMonitor
+        stop the authentication process along with boolean initiatedByclient to verify whether 
+        user trigger the event
+    */
     @Override
     public int stop(boolean initiatedByClient) {
         //boolean variable mAlreadyCancelled shows the user is already authenticated
@@ -239,6 +244,7 @@ public abstract class AuthenticationClient extends ClientMonitor {
         return true; // Invalid for Authenticate
     }
     //remove Arbitration
+    // Generic method provided for further extended class can have their own remove logic on Result data available
     @Override
     public boolean onRemoved(int fingerId, int groupId, int remaining) {
         //check for debug enabled
@@ -246,6 +252,7 @@ public abstract class AuthenticationClient extends ClientMonitor {
         return true; // Invalid for Authenticate
     }
     // enumerate result Arbitration
+    // Generic method provided for further extended class can have their own iterate logic on Result
     @Override
     public boolean onEnumerationResult(int fingerId, int groupId, int remaining) {
         //check for debug enabled

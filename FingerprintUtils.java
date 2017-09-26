@@ -48,11 +48,11 @@ public class FingerprintUtils {
 
 
 
-    //getInstance() ensures only one instance to be created/
-    //
+    //getInstance() ensures only one instance to be created
+    //Follows a singleton pattern
     public static FingerprintUtils getInstance() { 
         synchronized (sInstanceLock) {//this makes sure only one thread is executed at once
-            //singleton instance
+            //check for any previous instance of this class available
             if (sInstance == null) {//this creates a new object instance
                 sInstance = new FingerprintUtils(); //instantiation of the class instance
             }
@@ -67,10 +67,13 @@ public class FingerprintUtils {
 
 
 
-    /**function returns the obtained initial fingerprints of the user
+    /**function returns a list obtained initial fingerprints of the user
     * @param ctx //Application context
     * @param userId
+        Context - Application context of Fingerprint Service
+        userId -  unique id for client  
     */
+
     public List<Fingerprint> getFingerprintsForUser(Context ctx, int userId) { 
         //returns a copy of the fingerprints which has name,userid, group id and device id
         return getStateForUser(ctx, userId).getFingerprints(); 
@@ -80,31 +83,35 @@ public class FingerprintUtils {
 
     /**creates a new instance of FingerPrint class and adds the details of user fingerprint by executing the runnables in the background
     * @param ctx
-    * @param fingerId
-    * @param userId
+    * @param fingerId- unique id for each of the fingers of a paricular client
+    * @param userId -unique id for client
     */
+    //Add the obtained fingerprint to the user details
     public void addFingerprintForUser(Context ctx, int fingerId, int userId) {
+        //getting the state of the userId provided and add the fingerprint to that state
         getStateForUser(ctx, userId).addFingerprint(fingerId, userId);
     }
 
 
 
     /**removes the fingerprint from the list
-    * @param ctx
-    * @param fingerId
-    * @param userId 
+    * @param ctx - Application context required for Fingerprint Service
+    * @param fingerId - unique id for each of the fingers of a paricular client
+    * @param userId - unique id for client
     */
+    //Remove the obtained fingerpeint from the user details
     public void removeFingerprintIdForUser(Context ctx, int fingerId, int userId) {
+        //getting the state of the provided user id and remove the fingerid
         getStateForUser(ctx, userId).removeFingerprint(fingerId);
     }
 
 
 
     /**renames the fingerprint by indexing the list using the fingerId and creating a new object by transfering the same details and a new name
-    * @param ctx
-    * @param fingerId
-    * @param userId
-    * @param name
+    * @param ctx - Application context required for Fingerprint Service
+    * @param fingerId - finger id from the client
+    * @param userId - unique id for the client
+    * @param name - new changed name for fingerId
     */
     public void renameFingerprintForUser(Context ctx, int fingerId, int userId, CharSequence name) {
         //checks if the name is empty, if it is, then do not rename it
@@ -112,17 +119,19 @@ public class FingerprintUtils {
             // Don't do the rename if it's empty
             return;
         }
+        //getting the state of the provided user id and rename this matched finger print
         getStateForUser(ctx, userId).renameFingerprint(fingerId, name);
     }
 
 
 
     /**function to give out a pattern of vibrations if there is an error in fingerPrint
-    * @param context
+    * @param context - Application context required for Fingerprint Service
     */
     public static void vibrateFingerprintError(Context context) {
         //gets the instance of the class that operates the vibrator on the device
         Vibrator vibrator = context.getSystemService(Vibrator.class); 
+        // check for any vibrator instance
         if (vibrator != null) {
             //this makes the vibration without any delay for 30ms and sleeps for 100ms and again vibrate for 30ms. -1 indicates that the vibration is not repeated again
             vibrator.vibrate(FP_ERROR_VIBRATE_PATTERN, -1);  
@@ -132,11 +141,12 @@ public class FingerprintUtils {
 
 
     /**function to give out a pattern of vibrations if fingerPrint process is successful 
-    * @param context
+    * @param context - application environment with all basic requirements
     */
     public static void vibrateFingerprintSuccess(Context context) {
         //gets the instance of the class that operates the vibrator on the device
         Vibrator vibrator = context.getSystemService(Vibrator.class);
+        // check for any vibrator instance
         if (vibrator != null) {
             //this makes the vibration without any delay for 30ms.-1 indicates that the vibration is not repeated again
             vibrator.vibrate(FP_SUCCESS_VIBRATE_PATTERN, -1);
@@ -146,12 +156,14 @@ public class FingerprintUtils {
 
 
     /**function to map the state and userid of a particular user 
-    * @param ctx
-    * @param userId
+    * @param ctx - Android Application context required for Fingerprint Service
+    * @param userId - the user id for the client
     */
     private FingerprintsUserState getStateForUser(Context ctx, int userId) {
         synchronized (this) {
-            FingerprintsUserState state = mUsers.get(userId); //the object is mapped taking userId as the key
+            //the object is mapped taking userId as the key
+            FingerprintsUserState state = mUsers.get(userId); 
+            //check the state had already any user with the same id
             if (state == null) { 
                 //Instantiates the class by sending context of fingerprint service and stores userId in a file
                 state = new FingerprintsUserState(ctx, userId);

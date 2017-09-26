@@ -92,6 +92,8 @@ public abstract class RemovalClient extends ClientMonitor {
 
     @Override
     public int stop(boolean initiatedByClient) {
+        //boolean variable mAlreadyCancelled shows the user is already authenticated
+        // And then stopped further authentication
         if (mAlreadyCancelled) {
 
             //logs it if the client stops the fingerprint removal process
@@ -104,9 +106,9 @@ public abstract class RemovalClient extends ClientMonitor {
         IBiometricsFingerprint daemon = getFingerprintDaemon();
 
         if (daemon == null) {
-
             //logs it if there is no fingerprint found
             Slog.w(TAG, "stopRemoval: no fingerprint HAL!");
+            //Likely fingerprint HAL is dead.
             return ERROR_ESRCH; //returns an error specifying that no process with that specific daemon is found
 
         }
@@ -125,6 +127,7 @@ public abstract class RemovalClient extends ClientMonitor {
 
             //catches the exception and logs it in TAG
             Slog.e(TAG, "stopRemoval failed", e);
+            //Likely fingerprint HAL is dead.
             return ERROR_ESRCH;//returns an error specifying that no process with that specific daemon is found
 
         }
@@ -136,14 +139,17 @@ public abstract class RemovalClient extends ClientMonitor {
     /*
      * @return true if we're done.
      */
+    // remaining - number of remaining available valid attempts to authenticate fingerId before locking
+    // fingerId - fingerprint provided by the user
+    // groupId - fingerId belongs to the groupId
     private boolean sendRemoved(int fingerId, int groupId, int remaining) {
 
         //obtains the receiver for fingerprint service from the device
         IFingerprintServiceReceiver receiver = getReceiver();
         try {
-
+            //check for any receiver available
             if (receiver != null) {
-                //notifies once the fingerprint is removed
+                //notifies using device Id once the fingerprint is removed
                 receiver.onRemoved(getHalDeviceId(), fingerId, groupId, remaining);
             }
         } catch (RemoteException e) {
@@ -158,8 +164,8 @@ public abstract class RemovalClient extends ClientMonitor {
     */
     @Override
     public boolean onRemoved(int fingerId, int groupId, int remaining) {
+        //Check the fingerId is not having null value
         if (fingerId != 0) {
-
             //creates a new instance of FingerPrint and removes the fingerprint by indexing the userId and fingerId
             FingerprintUtils.getInstance().removeFingerprintIdForUser(getContext(), fingerId,
                     getTargetUserId());
@@ -167,13 +173,16 @@ public abstract class RemovalClient extends ClientMonitor {
         }
         return sendRemoved(fingerId, getGroupId(), remaining);
     }
-
+    // remaining - number of remaining available valid attempts to authenticate fingerId before locking
+    // fingerId - fingerprint provided by the user
+    // groupId - fingerId belongs to the groupId
+    // Generic method provided for further extended class can have their own registering finger print logic on the Result data available
     @Override
     public boolean onEnrollResult(int fingerId, int groupId, int rem) {
         if (DEBUG) Slog.w(TAG, "onEnrollResult() called for remove!");
         return true; // Invalid for Remove
     }
-
+    // Generic method provided for further extended class can have their own logic at the time authentication 
     @Override
     public boolean onAuthenticated(int fingerId, int groupId) {
         if (DEBUG) Slog.w(TAG, "onAuthenticated() called for remove!");

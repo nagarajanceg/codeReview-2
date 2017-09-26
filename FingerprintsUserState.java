@@ -198,6 +198,7 @@ class FingerprintsUserState {
     }
 
     private static File getFileForUser(int userId) {
+        //get the user directory from RegisteredSericescache in environment
         return new File(Environment.getUserSystemDirectory(userId), FINGERPRINT_FILE);
     }
 
@@ -205,8 +206,8 @@ class FingerprintsUserState {
     // be used for multi threaded environment)
     private final Runnable mWriteStateRunnable = new Runnable() {
         @Override
-        // this method has to be over ridden
-        // the method the worker method is dowritestate
+        /* this method has to be overridden
+         the method the worker method is dowritestate */
         public void run() {
             doWriteState();
         }
@@ -267,7 +268,7 @@ class FingerprintsUserState {
         // AtomicFile is a class that helps performing atomic operations on file
         // and it also creates a back up so that if an operation fails we can restore it.
         AtomicFile destination = new AtomicFile(mFile);
-
+        //ArrayList of fingeprint class type
         ArrayList<Fingerprint> fingerprints;
 
         synchronized (this) {

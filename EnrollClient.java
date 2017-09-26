@@ -101,7 +101,7 @@ public abstract class EnrollClient extends ClientMonitor {
     }
 
 
-
+    //override the generic Start method available in the parent class ClientMonitor
     @Override
     public int start() {
 
@@ -112,6 +112,7 @@ public abstract class EnrollClient extends ClientMonitor {
         if (daemon == null) { 
 
             Slog.w(TAG, "enroll: no fingerprint HAL!");
+            //Likely fingerprint HAL is dead.
             return ERROR_ESRCH; //returns an error specifying that no process with that specific daemon is found
 
         }
@@ -138,7 +139,11 @@ public abstract class EnrollClient extends ClientMonitor {
     }
 
 
-
+    /*
+        override the generic stop method available in the parent class ClientMonitor
+        stop the authentication process along with boolean initiatedByclient to verify whether 
+        user trigger the event
+    */
     @Override
     public int stop(boolean initiatedByClient) {
 
@@ -149,19 +154,20 @@ public abstract class EnrollClient extends ClientMonitor {
 
         }
 
-        //gets the interface for fingerprint service
+        //get fingerprint service provider
         IBiometricsFingerprint daemon = getFingerprintDaemon(); 
 
-        //indicates that the finngerprint is not available
+        //indicates that the fingerprint is not available
         if (daemon == null) { 
 
             Slog.w(TAG, "stopEnrollment: no fingerprint HAL!"); //logged into log file
+            //Likely fingerprint HAL is dead.
             return ERROR_ESRCH;//returns an error specifying that no process with that specific daemon is found
 
         }
         try {
 
-            //the interface for fingerprint service is cancelled
+            //fingerprint service is cancelled
             final int result = daemon.cancel(); 
 
             if (result != 0) {
@@ -170,7 +176,6 @@ public abstract class EnrollClient extends ClientMonitor {
 
             }
         } catch (RemoteException e) {
-
             //failed enrollment stopping state is logged in file
             Slog.e(TAG, "stopEnrollment failed", e);
             
@@ -189,12 +194,14 @@ public abstract class EnrollClient extends ClientMonitor {
         return true; // Invalid for EnrollClient
     }
 
+    /*Remaining - contains number of valid attempts available for the fingerprint verfication*/
     @Override
     public boolean onEnumerationResult(int fingerId, int groupId, int remaining) {
         if (DEBUG) Slog.w(TAG, "onEnumerationResult() called for enroll!");
         return true; // Invalid for EnrollClient
     }
 
+    /*Remaining - contains number of valid attempts available for the fingerprint verfication*/
     @Override
     public boolean onAuthenticated(int fingerId, int groupId) {
         if (DEBUG) Slog.w(TAG, "onAuthenticated() called for enroll!");
