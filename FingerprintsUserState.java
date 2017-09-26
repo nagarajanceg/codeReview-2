@@ -72,7 +72,7 @@ class FingerprintsUserState {
 
     /**
      * Constructor for the given class with Context and UserID
-     * @param ctx // devise and application related specification
+     * @param ctx // device and application related specification
      * @param userId
      */
     public FingerprintsUserState(Context ctx, int userId) {

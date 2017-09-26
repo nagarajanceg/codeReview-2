@@ -83,7 +83,7 @@ public class FingerprintUtils {
 
     /**creates a new instance of FingerPrint class and adds the details of user fingerprint by executing the runnables in the background
     * @param ctx
-    * @param fingerId- unique id for each of the fingers of a paricular client
+    * @param fingerId- unique id for each of the fingers of a particular client
     * @param userId -unique id for client
     */
     //Add the obtained fingerprint to the user details
