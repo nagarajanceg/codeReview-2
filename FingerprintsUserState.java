@@ -68,10 +68,11 @@ class FingerprintsUserState {
     // this variable. Also , this list is accessed synchronously throughout the program by multiple threads
     private final ArrayList<Fingerprint> mFingerprints = new ArrayList<Fingerprint>();
     private final Context mCtx;
+    // Context contains device and app sepecific informations.
 
     /**
      * Constructor for the given class with Context and UserID
-     * @param ctx
+     * @param ctx // devise and application related specification
      * @param userId
      */
     public FingerprintsUserState(Context ctx, int userId) {
@@ -87,8 +88,8 @@ class FingerprintsUserState {
 
     /**
      * Method to add a new Finger Print
-     * @param fingerId
-     * @param groupId
+     * @param fingerId , the fingerId is the priary key for the finger prints stored
+     * @param groupId , group Id specified the group the finger print belongs to
      */
     public void addFingerprint(int fingerId, int groupId) {
         synchronized (this) {
@@ -101,7 +102,7 @@ class FingerprintsUserState {
 
     /**
      * Remove the given finger print from our list
-     * @param fingerId
+     * @param fingerId , primary key to identify each of the fingerprint
      */
     public void removeFingerprint(int fingerId) {
 
@@ -124,7 +125,9 @@ class FingerprintsUserState {
     /**
      * Method to rename the given fingerprint to given name
      * @param fingerId
-     * @param name
+     * @param name A CharSequence is a readable sequence of char values.
+     *             This interface provides uniform, read-only access to many different kinds of char sequences.
+     *             A char value represents a character in the Basic Multilingual Plane (BMP) or a surrogate
      */
     public void renameFingerprint(int fingerId, CharSequence name) {
         synchronized (this) {
@@ -329,6 +332,7 @@ class FingerprintsUserState {
      */
     private void readStateSyncLocked() {
 
+        // FileInputStream is a boilerplate patter to read the buffered input from the file.
         FileInputStream in;
         // check if the mfile exist
         if (!mFile.exists()) {
@@ -364,7 +368,8 @@ class FingerprintsUserState {
      * which contains each fingerprint details under FINGERPRINT tag
      * @param parser
      * @throws IOException
-     * @throws XmlPullParserException
+     * @throws XmlPullParserException // the XML Pull parser is used to aprse xml elements by which
+     * which we can pull values from the xml file using the tag name.
      */
     private void parseStateLocked(XmlPullParser parser)
             throws IOException, XmlPullParserException {
