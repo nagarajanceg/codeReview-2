@@ -52,6 +52,7 @@ public class FingerprintUtils {
     //
     public static FingerprintUtils getInstance() { 
         synchronized (sInstanceLock) {//this makes sure only one thread is executed at once
+            //singleton instance
             if (sInstance == null) {//this creates a new object instance
                 sInstance = new FingerprintUtils(); //instantiation of the class instance
             }
@@ -67,7 +68,7 @@ public class FingerprintUtils {
 
 
     /**function returns the obtained initial fingerprints of the user
-    * @param ctx
+    * @param ctx //Application context
     * @param userId
     */
     public List<Fingerprint> getFingerprintsForUser(Context ctx, int userId) { 

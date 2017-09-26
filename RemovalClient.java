@@ -33,7 +33,18 @@ public abstract class RemovalClient extends ClientMonitor {
     private int mFingerId; //fingerprint id
 
 
-    /**constructor for class RemovalClient 
+    /*
+        constructor for class RemovalClient 
+
+       Context - Application context of Fingerprint Service
+       HalDeviceId - Hardware abstraction layer device Id of associated fingerprint hardware device
+       Token - Unique token for the client 
+       restricted - the client access permission stated by android.Manifest.permission.MANAGE_FINGERPRINT
+       targetUserId - target user id for authentication
+       owner - owner name of the client that owns this
+       receiver -  authentication recipient of related events
+       opId - operation identification number
+       group id - fingerprint set grouped identification 
     */
     public RemovalClient(Context context, long halDeviceId, IBinder token,
             IFingerprintServiceReceiver receiver, int fingerId, int groupId, int userId,
@@ -41,7 +52,7 @@ public abstract class RemovalClient extends ClientMonitor {
 
         //calls the constructor in ClientMonitor and initializes the device id, user id, group id for set of fingerprints and sets the name of the owner of the device
         super(context, halDeviceId, token, receiver, userId, groupId, restricted, owner);
-        mFingerId = fingerId;
+        mFingerId = fingerId; //Intialize the finger ID
 
     }
 
@@ -73,10 +84,8 @@ public abstract class RemovalClient extends ClientMonitor {
                 return result;
             }
         } catch (RemoteException e) {
-
             //logs the error if the removal process is a failure
             Slog.e(TAG, "startRemove failed", e);
-
         }
         return 0;
     }

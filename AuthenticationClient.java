@@ -97,9 +97,11 @@ public abstract class AuthenticationClient extends ClientMonitor {
                         Slog.v(TAG, "onAuthenticated(owner=" + getOwnerString()
                                 + ", id=" + fingerId + ", gp=" + groupId + ")");
                     }
-                    //check for the restricted deviceid assigned in the constructor 
-                    // if it is not restricted create final Fingerprint object with groupId corresponding
-                    // finger print associated with this device id.
+                    /*
+                        check for the restricted deviceid assigned in the constructor 
+                        if it is not restricted create final Fingerprint object with groupId corresponding
+                        finger print associated with this device id.
+                    */
                     Fingerprint fp = !getIsRestricted() 
                             ? new Fingerprint("" /* TODO */, groupId, fingerId, getHalDeviceId())
                             : null;

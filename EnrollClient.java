@@ -108,7 +108,7 @@ public abstract class EnrollClient extends ClientMonitor {
         //gets the interface for fingerprint service
         IBiometricsFingerprint daemon = getFingerprintDaemon(); 
 
-        //indicates that the finngerprint is not available
+        //indicates that the fingerprint is not available
         if (daemon == null) { 
 
             Slog.w(TAG, "enroll: no fingerprint HAL!");
@@ -182,7 +182,7 @@ public abstract class EnrollClient extends ClientMonitor {
         mAlreadyCancelled = true; 
         return 0;
     }
-
+    /*Remaining - contains number of valid attempts available for the fingerprint verfication*/
     @Override
     public boolean onRemoved(int fingerId, int groupId, int remaining) {
         if (DEBUG) Slog.w(TAG, "onRemoved() called for enroll!");
