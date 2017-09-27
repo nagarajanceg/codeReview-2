@@ -187,6 +187,7 @@ public abstract class EnrollClient extends ClientMonitor {
         mAlreadyCancelled = true; 
         return 0;
     }
+    // Generic method provided for further extended class can have their own remove logic on Result data available
     /*Remaining - contains number of valid attempts available for the fingerprint verfication*/
     @Override
     public boolean onRemoved(int fingerId, int groupId, int remaining) {
